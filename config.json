@@ -1,0 +1,34 @@
+{
+    "servers": [
+        {
+            "name": "Sensitive",
+            "ip": "192.168.1.3",
+            "access_rules": {
+                "manager": {
+                    "allow": true
+                },
+                "hr": {
+                    "allow": true
+                },
+                "worker": {
+                    "allow": true
+                }
+            }
+        },
+        {
+            "name": "SMTP",
+            "ip": "192.168.1.25",
+            "access_rules": {
+                "manager": {
+                    "allow": true
+                },
+                "hr": {
+                    "allow": false
+                },
+                "worker": {
+                    "allow": false
+                }
+            }
+        }
+    ]
+}
