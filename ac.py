@@ -13,7 +13,7 @@ import json
 init()
 
 class AttributeCertificate:
-    def __init__(self, version, holder, issuer, serial_number, validity_period, attributes, issuer_public_key):
+    def __init__(self, version, holder, issuer, serial_number, validity_period, attributes):
         self.version = version
         self.holder = holder
         self.issuer = issuer
@@ -22,8 +22,6 @@ class AttributeCertificate:
         self.validity_period = validity_period
         self.attributes = attributes
         self.signature_value = None
-        self.issuer_public_key = issuer_public_key
-
 
     def sign(self, private_key):
         data_to_sign = "".join([
@@ -41,7 +39,7 @@ class AttributeCertificate:
             hashes.SHA256()
         )
 
-    def verify(self):
+    """def verify(self):
         data_to_verify = "".join([
             str(self.version),
             self.holder,
@@ -59,7 +57,7 @@ class AttributeCertificate:
             )
             print("Signature is valid.")
         except InvalidSignature:
-            print("Signature is invalid.")
+            print("Signature is invalid.")"""
 
 class Repository:
     def __init__(self):
