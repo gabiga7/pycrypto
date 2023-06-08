@@ -1,0 +1,14 @@
+{
+    "staff": [
+        {
+            "name": "alice_dupont",
+            "role": "manager",
+            "public_key_file": "alice_dupont.pub"
+        },
+        {
+            "name": "bob_dumas",
+            "role": "worker",
+            "public_key_file": "bob_dumas.pub"
+        }
+    ]
+}
