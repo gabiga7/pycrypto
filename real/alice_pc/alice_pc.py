@@ -2,7 +2,7 @@ import socket
 from rsa.key import newkeys
 import sys
 import os
-from rsa import PrivateKey, PublicKey
+from rsa import PublicKey
 
 def generate_public_key():
     public_key_file = "id.pub"
@@ -10,10 +10,10 @@ def generate_public_key():
 
     # Check if the public key file exists
     if os.path.isfile(public_key_file):
-        # If it exists, read it and return the public key
+        # If it exists, read it and return the public key as a string
         with open(public_key_file, 'r') as f:
             public_key_data = f.read()
-            return PublicKey.load_pkcs1(public_key_data)
+            return public_key_data
     else:
         # If it does not exist, generate a new RSA key pair
         public_key, private_key = newkeys(2048)
@@ -26,8 +26,8 @@ def generate_public_key():
         with open(private_key_file, 'w') as f:
             f.write(private_key.save_pkcs1().decode())
 
-        # Return the public key
-        return public_key
+        # Return the public key as a string
+        return public_key.save_pkcs1().decode()
 
 def send_public_key_file(server_port):
     # Create a TCP socket
@@ -37,9 +37,9 @@ def send_public_key_file(server_port):
     server_address = ('localhost', server_port)
     client_socket.connect(server_address)
 
-    # Send the public key file to the server
-    with open("id.pub", "rb") as file:
-        public_key_file_content = file.read()
+    # Send the public key file content as UTF-8 string to the server
+    with open("id.pub", "r") as file:
+        public_key_file_content = file.read().encode('utf-8')
         client_socket.send(public_key_file_content)
 
     return client_socket

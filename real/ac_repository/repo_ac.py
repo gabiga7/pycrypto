@@ -5,6 +5,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from base64 import b64encode, b64decode
+import rsa 
 
 # AttributeCertificate class
 class AttributeCertificate:
@@ -50,6 +51,44 @@ def recv_msg(sock):
     # Read the message
     return recvall(sock, msglen).decode()
 
+
+
+def compare_keys(key1, key2):
+    print("First few characters of key1:")
+    for char in key1[:10]:
+        print(f"{char}: {ord(char)}")
+    print("First few characters of key2:")
+    for char in key2[:10]:
+        print(f"{char}: {ord(char)}")
+    if len(key1) != len(key2):
+        print("Keys are of different lengths.")
+        return
+    for i in range(len(key1)):
+        if key1[i] != key2[i]:
+            print(f"Difference at position {i}: {key1[i]} ({ord(key1[i])}) vs {key2[i]} ({ord(key2[i])})")
+
+def is_rsa_key_in_dict(key, key_dict):
+    key = key.strip()  # Removing leading and trailing whitespaces
+    for dict_key in key_dict.keys():
+        dict_key = dict_key.strip().replace("\r\n", "\n")
+        if key != dict_key:
+            print(f"Comparing ***{key}*** with ***{dict_key}***")
+            compare_keys(key, dict_key)
+            print("Keys are not identical")
+        else:
+            print("Keys are identical")
+            return True
+    return False
+
+def find_matching_key(needle, haystack):
+    needle = needle.strip()  # Strip leading/trailing whitespaces
+    for key in haystack.keys():
+        stripped_key = key.strip().replace("\r\n", "\n")  # Treat the key similarly to needle
+        if needle == stripped_key:
+            return key  # return the original (untreated) key
+    return None  # return None if no match is found
+
+
 def recvall(sock, n):
     # Helper function to recv n bytes or return None if EOF is hit
     data = bytearray()
@@ -64,7 +103,7 @@ def handle_client(client_socket):
     print("Handling a new client connection...")
     while True:
         request = recv_msg(client_socket)  # Receive AC JSON data or public key
-        print(f"Received request from client: {request}")  # Debug: print request data
+        #print(f"Received request from client: {request}")  # Debug: print request data
         if not request:
             break
 
@@ -78,16 +117,16 @@ def handle_client(client_socket):
                 ac = AttributeCertificate(public_key)
                 ac.from_dict(ac_dict_json)
                 ac_dict[public_key] = ac  # Store the AC
-                print(f'Stored certificate for public key {public_key}:')
+                print(f'Stored AC')
                 print(json.dumps(ac.to_dict(), indent=4))  # Debug: print stored certificate
 
             client_socket.send("AC received and stored successfully.".encode())
             print("Sent response to ac_issuer.")
         else:
             # This is a public key
-            print(f"Received public key: {request}")
-            if request in ac_dict:
-                ac = ac_dict[request]
+            dict_key = find_matching_key(request, ac_dict)
+            if dict_key is not None:  # if a match is found in the dictionary
+                ac = ac_dict[dict_key]
                 encoded_ac_data = json.dumps(ac.to_dict()).encode()
                 print(f"Encoded AC data: {encoded_ac_data}")  # Debug: print encoded AC data
 

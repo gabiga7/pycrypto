@@ -11,13 +11,10 @@ def load_public_key_from_file(filename):
     try:
         with open(filename, 'r') as f:
             key_data = f.read().strip()
-            key = rsa.PublicKey.load_pkcs1(key_data)
-            print(f"Loaded public key from {filename}: {key}")  # debug print
-            return key
+            return key_data  # return the key as a string
     except Exception as e:
         print(f"Error loading public key from file {filename}: {str(e)}")
         return None
-
 
 
 # Load the staff data from staff.json
@@ -30,9 +27,9 @@ with open('staff.json', 'r') as file:
 
 
 class AttributeCertificate:
-    def __init__(self, holder_public_key_file, role):
+    def __init__(self, holder_public_key, role):
         self.version = "1.0"
-        self.holder = holder_public_key_file
+        self.holder = holder_public_key
         self.issuer = "Attribute Certificate Issuer"
         self.signature_algorithm = "RSA-SHA256"
         self.serial_number = "123456789"
@@ -80,7 +77,7 @@ def send_ac_to_repo(ac_json_data):
     print("Sending AC to repository...")
     repo_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     repo_socket.connect(('localhost', 6000))  # Connect to repo_ac server
-    ac_json_data = ac_json_data.encode()
+    ac_json_data = ac_json_data.encode('utf-8')
     ac_json_data = len(ac_json_data).to_bytes(4, 'big') + ac_json_data
     repo_socket.sendall(ac_json_data)
     # Receive response from repo_ac server
@@ -100,9 +97,7 @@ def handle_client(client_socket):
     print("Handling a new client connection...")
     # Receive the holder's public key from the client
     holder_public_key_data = client_socket.recv(4096).decode().strip()
-    holder_public_key = rsa.PublicKey.load_pkcs1(holder_public_key_data.strip())
-
-    print(f"Received public key: {holder_public_key}")
+    holder_public_key = holder_public_key_data.strip()  # no need to load as rsa.PublicKey
 
     role = staff_keys.get(holder_public_key, None)
     if role is None:
