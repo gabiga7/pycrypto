@@ -12,7 +12,7 @@ def generate_public_key():
     if os.path.isfile(public_key_file):
         # If it exists, read it and return the public key as a string
         with open(public_key_file, 'r') as f:
-            public_key_data = f.read()
+            public_key_data = f.read().replace('\n', '')
             return public_key_data
     else:
         # If it does not exist, generate a new RSA key pair
@@ -20,14 +20,14 @@ def generate_public_key():
 
         # Save the public key to a file
         with open(public_key_file, 'w') as f:
-            f.write(public_key.save_pkcs1().decode())
+            f.write(public_key.save_pkcs1().decode().replace('\n', ''))
 
         # Save the private key to a file
         with open(private_key_file, 'w') as f:
-            f.write(private_key.save_pkcs1().decode())
+            f.write(private_key.save_pkcs1().decode().replace('\n', ''))
 
         # Return the public key as a string
-        return public_key.save_pkcs1().decode()
+        return public_key.save_pkcs1().decode().replace('\n', '')
 
 def send_public_key_file(server_port):
     # Create a TCP socket
@@ -39,16 +39,30 @@ def send_public_key_file(server_port):
 
     # Send the public key file content as UTF-8 string to the server
     with open("id.pub", "r") as file:
-        public_key_file_content = file.read().encode('utf-8')
+        public_key_file_content = file.read().replace('\n', '').encode('utf-8')
         client_socket.send(public_key_file_content)
 
     return client_socket
 
-def send_operation(client_socket, operation):
-    client_socket.send(operation.encode())
+def send_operation(client_socket):
+    # Send an empty string to ask for permissions
+    client_socket.send("".encode())
     response = client_socket.recv(4096).decode()
-    print(f"Response: {response}")
-
+    
+    # Check the server response
+    if response == 'ok':
+        print(f"{response}")
+        while True:
+            operation = input("Enter operation (or 'exit' to quit): ")
+            if operation.lower() == 'exit':
+                break
+            # Send the calculation to the server
+            client_socket.send(operation.encode())
+            response = client_socket.recv(4096).decode()
+            print(f"Response: {response}")
+    else:
+        print('Access denied.')
+        
 # Example usage
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -59,10 +73,6 @@ if __name__ == "__main__":
     public_key = generate_public_key()
     client_socket = send_public_key_file(server_port)
 
-    while True:
-        operation = input("Enter operation (or 'exit' to quit): ")
-        if operation.lower() == 'exit':
-            break
-        send_operation(client_socket, operation)
+    send_operation(client_socket)
 
     client_socket.close()

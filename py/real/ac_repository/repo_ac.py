@@ -25,7 +25,7 @@ class AttributeCertificate:
         self.signature_algorithm = ac_dict['signature_algorithm']
         self.serial_number = ac_dict['serial_number']
         self.validity_period = ac_dict['validity_period']
-        self.attributes = ac_dict['attributes']
+        self.attributes = {'roles': ac_dict['attributes']}
         self.signature_value = ac_dict['signature_value']
 
     def to_dict(self):
@@ -103,7 +103,6 @@ def handle_client(client_socket):
     print("Handling a new client connection...")
     while True:
         request = recv_msg(client_socket)  # Receive AC JSON data or public key
-        #print(f"Received request from client: {request}")  # Debug: print request data
         if not request:
             break
 
@@ -127,12 +126,18 @@ def handle_client(client_socket):
             dict_key = find_matching_key(request, ac_dict)
             if dict_key is not None:  # if a match is found in the dictionary
                 ac = ac_dict[dict_key]
-                encoded_ac_data = json.dumps(ac.to_dict()).encode()
-                print(f"Encoded AC data: {encoded_ac_data}")  # Debug: print encoded AC data
 
-                ac_data_length = len(encoded_ac_data).to_bytes(4, 'big')
-                client_socket.sendall(ac_data_length + encoded_ac_data)
-                print("Sent AC to client.")
+                # Debugging statements
+                print(type(ac.attributes))
+                print(ac.attributes)
+
+                roles = ac.attributes
+                roles_json = json.dumps(roles)  # Convert roles to JSON
+                print(f"Roles: {roles}")  # Debug: print roles
+
+                roles_data_length = len(roles_json).to_bytes(4, 'big')
+                client_socket.sendall(roles_data_length + roles_json.encode())
+                print("Sent roles to client.")
             else:
                 client_socket.send("No AC associated with this public key.".encode())
                 print("No AC associated with this public key.")
