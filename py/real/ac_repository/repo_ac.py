@@ -52,42 +52,13 @@ def recv_msg(sock):
     return recvall(sock, msglen).decode()
 
 
-
-def compare_keys(key1, key2):
-    print("First few characters of key1:")
-    for char in key1[:10]:
-        print(f"{char}: {ord(char)}")
-    print("First few characters of key2:")
-    for char in key2[:10]:
-        print(f"{char}: {ord(char)}")
-    if len(key1) != len(key2):
-        print("Keys are of different lengths.")
-        return
-    for i in range(len(key1)):
-        if key1[i] != key2[i]:
-            print(f"Difference at position {i}: {key1[i]} ({ord(key1[i])}) vs {key2[i]} ({ord(key2[i])})")
-
-def is_rsa_key_in_dict(key, key_dict):
-    key = key.strip()  # Removing leading and trailing whitespaces
-    for dict_key in key_dict.keys():
-        dict_key = dict_key.strip().replace("\r\n", "\n")
-        if key != dict_key:
-            print(f"Comparing ***{key}*** with ***{dict_key}***")
-            compare_keys(key, dict_key)
-            print("Keys are not identical")
-        else:
-            print("Keys are identical")
-            return True
-    return False
-
-def find_matching_key(needle, haystack):
-    needle = needle.strip()  # Strip leading/trailing whitespaces
-    for key in haystack.keys():
-        stripped_key = key.strip().replace("\r\n", "\n")  # Treat the key similarly to needle
-        if needle == stripped_key:
-            return key  # return the original (untreated) key
-    return None  # return None if no match is found
-
+def print_ac(ac):
+    ac_dict = ac.to_dict()
+    print("Attribute Certificate:")
+    for key, value in ac_dict.items():
+        # Only print first 10 characters if value is a string, else print the whole value
+        printable_value = value[:10]+"..." if isinstance(value, str) and len(value) > 10 else value
+        print(f"  {key}: {printable_value}")
 
 def recvall(sock, n):
     # Helper function to recv n bytes or return None if EOF is hit
@@ -100,7 +71,7 @@ def recvall(sock, n):
     return data
 
 def handle_client(client_socket):
-    print("Handling a new client connection...")
+    print("\033[94mHandling a new client connection...\033[0m")  # Blue
     while True:
         request = recv_msg(client_socket)  # Receive AC JSON data or public key
         if not request:
@@ -110,39 +81,34 @@ def handle_client(client_socket):
             # This is an AC
             ac_dict_json = json.loads(request)
             public_key = ac_dict_json['holder']  # Get holder's public key from AC dict
-            print(f"Received AC for public key: {public_key}")
+            print("\033[93mReceived AC\033[0m")  # Yellow
 
             if public_key not in ac_dict:
                 ac = AttributeCertificate(public_key)
                 ac.from_dict(ac_dict_json)
                 ac_dict[public_key] = ac  # Store the AC
-                print(f'Stored AC')
-                print(json.dumps(ac.to_dict(), indent=4))  # Debug: print stored certificate
-
-            client_socket.send("AC received and stored successfully.".encode())
-            print("Sent response to ac_issuer.")
+                print("\033[32mStored AC\033[0m")  # Green
+                print_ac(ac)  # Debug: print stored certificate
         else:
             # This is a public key
-            dict_key = find_matching_key(request, ac_dict)
-            if dict_key is not None:  # if a match is found in the dictionary
-                ac = ac_dict[dict_key]
-
-                # Debugging statements
-                print(type(ac.attributes))
-                print(ac.attributes)
+            if request in ac_dict:  # Simple key match check
+                ac = ac_dict[request]
 
                 roles = ac.attributes
                 roles_json = json.dumps(roles)  # Convert roles to JSON
-                print(f"Roles: {roles}")  # Debug: print roles
+                print(f"\033[33mAssociated role found: {roles}\033[0m")  # Yellow
 
                 roles_data_length = len(roles_json).to_bytes(4, 'big')
                 client_socket.sendall(roles_data_length + roles_json.encode())
-                print("Sent roles to client.")
+                print("\033[92mSent roles to client.\033[0m")  # Light green
             else:
-                client_socket.send("No AC associated with this public key.".encode())
-                print("No AC associated with this public key.")
+                roles = {"roles": ["None"] }
+                roles_json = json.dumps(roles)
+                roles_data_length = len(roles_json).to_bytes(4, 'big')
+                client_socket.sendall(roles_data_length + roles_json.encode())
+                print("\033[31mNo AC associated with this public key, sent None role.\033[0m")  # Red
     client_socket.close()
-    print("Client connection closed.")
+    print("\033[32mClient connection closed.\033[0m")  # Green
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 6000
@@ -151,14 +117,14 @@ if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
-    print(f"Server listening on {HOST}:{PORT}")
+    print(f"\033[94mServer listening on {HOST}:{PORT}\033[0m")  # Blue
 
     try:
         while True:
             client_socket, addr = server_socket.accept()
-            print(f"Accepted connection from: {addr}")
+            print(f"\033[92mAccepted connection from: {addr}\033[0m")  # Light green
             client_thread = threading.Thread(target=handle_client, args=(client_socket,))
             client_thread.start()
     except KeyboardInterrupt:
         server_socket.close()
-        print("Server shut down.")
+        print("\033[31mServer shut down.\033[0m")  # Red

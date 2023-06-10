@@ -3,6 +3,6 @@
         "access": true
     },
     "worker": {
-        "access": true
+        "access": false
     }
 }
