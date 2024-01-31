@@ -1,8 +1,0 @@
-{
-    "manager": {
-        "access": true
-    },
-    "worker": {
-        "access": false
-    }
-}
