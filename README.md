@@ -1,8 +1,5 @@
 # Installation et utilisation du système
 Ce README vous guide à travers les étapes d'installation et d'utilisation de notre système.
-## Affichage de couleur
-
-Pour afficher la couleur, veuillez utiliser l'application Microsoft Store "Windows Terminal".
 
 ## Installation des dépendances
 
